@@ -3,5 +3,6 @@
 Creates an html document of recursive hashes of all the files in the specified directory.
 
 ```bash
-cargo run my/directory
+cargo run path/to/my/directory -o /tmp/output.html
+open /tmp/output.html
 ```

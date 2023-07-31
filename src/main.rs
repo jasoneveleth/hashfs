@@ -1,4 +1,5 @@
 use std::fs;
+use std::fs::DirEntry;
 use std::path::PathBuf;
 use sha2::Digest;
 use anyhow::Result;
@@ -22,9 +23,10 @@ fn bold(s: &str) -> String {
 fn visit(dir: &PathBuf, mut last_log: Instant) -> Result<String> {
     let mut contents = String::new();
 
-    for entry in fs::read_dir(dir)? {
-        let entry = entry?;
-
+    let entries: Result<Vec<DirEntry>, _> = fs::read_dir(dir)?.into_iter().collect();
+    let mut entries = entries?;
+    entries.sort_by_key(|e| e.path());
+    for entry in entries {
         if last_log.elapsed().as_millis() > 1000 {
             println!("current entry: {}", entry.path().to_string_lossy());
             last_log = Instant::now();
@@ -66,8 +68,13 @@ fn main() -> Result<()> {
     let dir = &args[1];
     let html = visit(&PathBuf::from(dir), Instant::now())?;
 
+    let output_file = if args.len() == 4 {
+        &args[3]
+    } else {
+        "/tmp/dir.html"
+    };
+
     let data = "<html><body>".to_string() + &html + "<style>:root{--l: 25px}details > details{margin-left: var(--l);}summary{margin-left: calc(0px - var(--l))}html{font-family: monospace;margin-left: var(--l);}</style></body></html>";
-    let output_file = "/tmp/dir2.html";
     fs::write(output_file, data).expect("Something is really wrong if /tmp is broken");
     println!("successfully written to {}!", output_file);
     Ok(())
